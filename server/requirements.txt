@@ -1,0 +1,17 @@
+# Web framework
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+
+# Database (Postgres via Supabase)
+SQLAlchemy>=2.0
+psycopg[binary,pool]
+
+# Redis
+redis==5.0.7
+
+# Supabase client
+supabase==2.5.1
+
+# Env + validation
+python-dotenv==1.0.1
+pydantic==2.8.2
