@@ -15,3 +15,12 @@ supabase==2.5.1
 # Env + validation
 python-dotenv==1.0.1
 pydantic==2.8.2
+
+# LLM + Embeddings
+openai>=1.37.0
+
+# Vector Store
+pinecone
+
+# JWT
+python-jose
