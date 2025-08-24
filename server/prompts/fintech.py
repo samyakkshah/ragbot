@@ -153,10 +153,10 @@ def _format_history(history: List[Message], max_pairs: int = 6) -> str:
     """
     buffer = []
     count = 0
-    for role, content in reversed(list(history)):
+    for hist in reversed(history):
         if count >= max_pairs * 2:
             break
-        buffer.append(f"{role}: {content.strip()}")
+        buffer.append(f"{hist.role}: {hist.content.strip()}")
         count += 1
     buffer.reverse()
     return "\n".join(buffer)
@@ -170,7 +170,7 @@ def build_messages(
     """
 
     context_block = _format_context(chunks=chunks)
-    history_block = _format_history(history=history)
+    history_block = _format_history(history=history) if len(history) > 1 else []
     user_content = f"""
 \"\"\"
 CONTEXT:

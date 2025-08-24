@@ -2,10 +2,9 @@ from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.exc import SQLAlchemyError
-from fastapi import HTTPException, status
-from models import Message, Session
-from schemas.message import MessageCreate
+from fastapi import HTTPException
 from models import Message
+from schemas.message import MessageCreate, IntroMessage
 from uuid import UUID, uuid4
 
 
@@ -15,7 +14,12 @@ from local_logs.logger import logger
 
 async def get_messages(session: AsyncSession, session_id: UUID) -> Sequence[Message]:
     """
-    Retrieve all messages for a given session, ordered by time
+    Retrieve all messages for a given session, ordered by creation time.
+
+    :param session: Active async DB session.
+    :param session_id: Chat session UUID.
+    :return: Sequence of Message ORM rows ordered oldest → newest.
+    :raises HTTPException: 500 if the query fails.
     """
     try:
         result = await session.execute(
@@ -39,7 +43,13 @@ async def add_message(
     session: AsyncSession, session_id: UUID, msg: MessageCreate
 ) -> Message:
     """
-    Create and persist a new message for session
+    Persist a new message in a session.
+
+    :param session: Active async DB session.
+    :param session_id: Chat session UUID.
+    :param msg: MessageCreate payload (role, content).
+    :return: Created Message ORM row.
+    :raises HTTPException: 500 on failure to insert.
     """
     try:
         message = Message(
@@ -60,6 +70,13 @@ async def add_message(
 
 
 async def clear_session(session: AsyncSession, session_id: UUID) -> None:
+    """
+    Delete all messages in a session.
+
+    :param session: Active async DB session.
+    :param session_id: Chat session UUID.
+    :raises HTTPException: 500 on failure to delete.
+    """
     try:
         await session.execute(
             Message.__table__.delete().where(Message.session_id == session_id)

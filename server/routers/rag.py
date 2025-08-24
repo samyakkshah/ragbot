@@ -7,10 +7,10 @@ from schemas.rag import RAGQuery
 from schemas.message import MessageCreate
 
 from services.open_ai_embedder import OpenAIEmbedder
-from services.pinecone_vectore_store import PineconeVectorStore
+from services.pinecone_vector_store import PineconeVectorStore
 from services.open_ai_llm_generator import OpenAIChatGenerator
 from services.rag_pipeline import RAGPipeline
-from services.chat import add_message
+from services.chat import add_message, get_messages
 
 
 from config import config
@@ -19,16 +19,16 @@ from local_logs.logger import logger
 router = APIRouter(prefix="/rag", tags=["RAG"])
 
 _embedder = OpenAIEmbedder()
-_vector_store = PineconeVectorStore(embedder=_embedder, namespace="")
+vector_store = PineconeVectorStore(embedder=_embedder, namespace="")
 _llm_generator = OpenAIChatGenerator()
-_rag_pipeline = RAGPipeline(_vector_store, _llm_generator, top_k=5)
+_rag_pipeline = RAGPipeline(vector_store, _llm_generator, top_k=5)
 
 
 @router.post("/query", status_code=status.HTTP_202_ACCEPTED)
 async def rag_stream(
     query: RAGQuery,
     request: Request,
-    db: AsyncSession = Depends(db_manager.get_session),
+    session: AsyncSession = Depends(db_manager.get_session),
 ):
     """
     Stream a Retrieval‑Augmented Generation (RAG) response for the given query.
@@ -42,7 +42,7 @@ async def rag_stream(
     # Best‑effort: persist user message first
     try:
         await add_message(
-            db, query.session_id, MessageCreate(role="user", content=query.message)
+            session, query.session_id, MessageCreate(role="user", content=query.message)
         )
     except Exception as e:
         logger.error(
@@ -52,7 +52,9 @@ async def rag_stream(
     async def token_generator():
         buffer = ""
         try:
-            async for chunk in _rag_pipeline.stream(query.message):
+            history = list(await get_messages(session, query.session_id))
+            history = history[:-1]  # strip last message (user query)
+            async for chunk in _rag_pipeline.stream(query.message, history):
                 # Early client disconnect check (best‑effort)
                 try:
                     if await request.is_disconnected():
@@ -75,7 +77,7 @@ async def rag_stream(
             if buffer:
                 try:
                     await add_message(
-                        db,
+                        session,
                         query.session_id,
                         MessageCreate(role="finbot", content=buffer),
                     )
@@ -86,9 +88,3 @@ async def rag_stream(
                     )
 
     return StreamingResponse(token_generator(), media_type="text/plain; charset=utf-8")
-
-
-@router.get("/health", status_code=status.HTTP_200_OK)
-async def get_health():
-    pc_ok = await _vector_store.health_check()
-    return {"status": "ok", "postgres": pc_ok}

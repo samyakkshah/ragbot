@@ -3,6 +3,11 @@ from typing import Literal
 from datetime import datetime
 
 
+class IntroMessage(BaseModel):
+    role: Literal["finbot"] = "finbot"
+    content: str
+
+
 class MessageCreate(BaseModel):
     """Incoming message payload from the user or finbot."""
 

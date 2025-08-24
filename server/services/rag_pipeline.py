@@ -1,6 +1,8 @@
 from typing import List, AsyncIterator
 from interfaces.vector_store import VectorStore
 from interfaces.llm_generator import LLMGenerator
+from models import Message
+
 from local_logs.logger import logger
 
 
@@ -61,7 +63,7 @@ class RAGPipeline:
             logger.error("[RAG] Retrieval failed:", exc=e)
             raise
 
-    async def stream(self, query: str) -> AsyncIterator[str]:
+    async def stream(self, query: str, history: List[Message]) -> AsyncIterator[str]:
         """
         Stream the model answer token-by-token.
 
@@ -79,7 +81,9 @@ class RAGPipeline:
                 logger.warning("[RAG] No context found")
 
             # History injection can be added later; default to empty list for now.
-            async for token in self._llm_generator.stream_response(chunks, query, []):
+            async for token in self._llm_generator.stream_response(
+                chunks, query, history
+            ):
                 yield token
         except Exception as e:
             logger.error("[RAG] Pipeline streaming error:", exc=e)

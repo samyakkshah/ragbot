@@ -4,7 +4,7 @@ from uuid import UUID
 from typing import List
 from db_manager import db_manager
 from services.chat import get_messages, add_message, clear_session
-from schemas.message import MessageCreate, MessageResponse
+from schemas.message import MessageResponse
 
 
 from config import config
@@ -20,30 +20,7 @@ async def get_chat_history(
     """
     Fetch all messages in given chat session, ordered by time
     """
-    try:
-        return await get_messages(session, session_id)
-    except Exception as e:
-        logger.error("[router:chat] Failed to get messages:", exc=e, once=config.DEBUG)
-        raise HTTPException(status_code=500, detail="Unable to fetch messages")
-
-
-@router.post(
-    "/{session_id}", response_model=MessageResponse, status_code=status.HTTP_201_CREATED
-)
-async def post_message(
-    session_id: UUID,
-    message: MessageCreate,
-    session: AsyncSession = Depends(db_manager.get_session),
-):
-    """
-    Add new message (user | finbot) to a session
-    """
-
-    try:
-        return await add_message(session, session_id, message)
-    except Exception as e:
-        logger.error("[router:chat] Failed to post message", exc=e, once=config.DEBUG)
-        raise HTTPException(status_code=500, detail="Unable to save message")
+    return await get_messages(session, session_id)
 
 
 @router.delete("/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -53,8 +30,4 @@ async def delete_chat(
     """
     Remove all messages from a session.
     """
-    try:
-        await clear_session(session, session_id=session_id)
-    except Exception as e:
-        logger.error("[chat] Failed to clear messages:", exc=e, once=config.DEBUG)
-        raise HTTPException(status_code=500, detail="Unable to clear messages")
+    await clear_session(session, session_id=session_id)

@@ -67,7 +67,7 @@ class AppLogger:
         self._seen_exc_fingerprints: set[Tuple[str, str]] = set()
 
     # ---- Public convenience methods ----
-    def info(self, msg: str, **kwargs) -> None:
+    def info(self, msg: Any, **kwargs) -> None:
         self._logger.info(msg, extra=kwargs or None)
 
     def warning(self, msg: str, **kwargs) -> None:

@@ -7,8 +7,6 @@ class UserOut(BaseModel):
     """Sanitized user for frontend or debug"""
 
     id: UUID4
-    email: Optional[EmailStr] = None
-    name: Optional[EmailStr] = None
     created_at: datetime
 
     class Config:
