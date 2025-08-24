@@ -6,6 +6,7 @@ from pydantic import BaseModel, field_validator
 
 class Config(BaseModel):
     APP_NAME: str = "Eloquent AI"
+    COMPANY_NAME: str = "Eloquent"
     ENV: Literal["dev", "prod", "test"] = "dev"
     REACT_APP_URL: str
 
@@ -38,8 +39,16 @@ class Config(BaseModel):
     # Pinecone
     PINECONE_API_KEY: str
     PINECONE_ENV: str
-    PINECONE_INDEX_NAME: str
+    PINECONE_INDEX_HOST: str
+
+    # LLM
     OPEN_AI_API_KEY: str
+    EMBED_MODEL: str
+    CHAT_MODEL: str
+    HISTORY_LIMIT: int
+
+    # Embedding
+    EMBED_DIM: int = 1024
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod

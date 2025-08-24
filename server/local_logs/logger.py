@@ -2,17 +2,18 @@ import logging
 import sys
 from pathlib import Path
 from logging.handlers import TimedRotatingFileHandler
+from typing import Any, Optional, Tuple
 
 from config import config
 
 
 class AppLogger:
     """
-    Lightweight app logger.
-    - Writes INFO/DEBUG to server/local_logs/app.log
-    - Writes ERROR (and above) to server/local_logs/error.log
-    - Also streams to stdout (handy for Docker)
-    - Daily rotation, keep 7 days
+    Lightweight app logger with duplicate-stack suppression.
+
+    - Use error(..., basic=True) for short one-line errors (no stack).
+    - Use error(..., exc=e, once=config.DEBUG) exactly ONCE at the boundary to log full traceback.
+    - Any later calls with the same exception info will be downshifted to a basic line.
     """
 
     def __init__(self, name: str = "eloquent", log_dir: str = "local_logs/logs"):
@@ -62,20 +63,52 @@ class AppLogger:
         console.setFormatter(fmt)
         self._logger.addHandler(console)
 
-    # -- Public convenience methods --
-    def info(self, msg: str, **kwargs) -> None:
+        # very small, process-lifetime cache of already-logged exceptions
+        self._seen_exc_fingerprints: set[Tuple[str, str]] = set()
+
+    # ---- Public convenience methods ----
+    def info(self, msg: Any, **kwargs) -> None:
         self._logger.info(msg, extra=kwargs or None)
 
-    def error(self, msg: str, exc: Exception | None = None, **kwargs) -> None:
-        if exc:
-            self._logger.exception(msg, extra=kwargs or None)  # includes traceback
-        else:
-            self._logger.error(msg, extra=kwargs or None)
+    def warning(self, msg: str, **kwargs) -> None:
+        self._logger.warning(msg, extra=kwargs or None)
 
-    # If you need raw logger (rare)
-    @property
-    def raw(self) -> logging.Logger:
-        return self._logger
+    def error(
+        self,
+        msg: str,
+        exc: Optional[BaseException] = None,
+        *,
+        once: bool = False,
+        basic: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        """
+        Log an error.
+
+        - basic=True: one-line error (no stack).
+        - exc and once=config.DEBUG: log full stack ONCE per (type, str(exc)); subsequent calls
+          with the same fingerprint will log a short one-liner instead.
+        - exc and once=False: log a short one-liner (no stack), assuming someone above
+          will log the stack with once=config.DEBUG.
+        """
+        if basic or exc is None:
+            self._logger.error(msg, exc_info=False, extra=kwargs or None)
+            return
+
+        # we have an exception
+        fp = (type(exc).__name__, str(exc)[:500])
+
+        if once:
+            if fp in self._seen_exc_fingerprints:
+                # already logged with stack; keep it short now
+                self._logger.error(msg, exc_info=False, extra=kwargs or None)
+            else:
+                self._seen_exc_fingerprints.add(fp)
+                # full traceback exactly once
+                self._logger.exception(msg, exc_info=True, extra=kwargs or None)
+        else:
+            # inner layer: short line, no traceback; boundary logs stack
+            self._logger.error(msg, exc_info=False, extra=kwargs or None)
 
 
 logger = AppLogger()
