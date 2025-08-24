@@ -4,9 +4,9 @@ from datetime import datetime
 
 
 class MessageCreate(BaseModel):
-    """Incoming message payload from the user or assistant."""
+    """Incoming message payload from the user or finbot."""
 
-    role: Literal["user", "assistant"] = Field(..., description="Message author role")
+    role: Literal["user", "finbot"] = Field(..., description="Message author role")
     content: str = Field(
         ..., min_length=1, max_length=10000, description="Raw text message"
     )

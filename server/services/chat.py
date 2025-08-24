@@ -7,6 +7,9 @@ from models import Message, Session
 from schemas.message import MessageCreate
 from models import Message
 from uuid import UUID, uuid4
+
+
+from config import config
 from local_logs.logger import logger
 
 
@@ -26,7 +29,9 @@ async def get_messages(session: AsyncSession, session_id: UUID) -> Sequence[Mess
         )
         return messages
     except SQLAlchemyError as e:
-        logger.error(f"[service:chat] Failed to fetch messages: {e}")
+        logger.error(
+            "[service:chat] Failed to fetch messages:", exc=e, once=config.DEBUG
+        )
         raise HTTPException(status_code=500, detail="Could not fetch messages")
 
 
@@ -49,7 +54,7 @@ async def add_message(
         logger.info(f"[service:chat] Added new message to session: {session_id}")
         return message
     except SQLAlchemyError as e:
-        logger.error(f"[service:chat] Failed to save message: {e}")
+        logger.error("[service:chat] Failed to save message:", exc=e, once=config.DEBUG)
         await session.rollback()
         raise HTTPException(status_code=500, detail="Could not save message.")
 
@@ -62,6 +67,8 @@ async def clear_session(session: AsyncSession, session_id: UUID) -> None:
         await session.commit()
         logger.info(f"[service:chat] Cleared messages for session {session_id}")
     except SQLAlchemyError as e:
-        logger.error(f"[service:chat] Failed to clear messages: {e}")
+        logger.error(
+            "[service:chat] Failed to clear messages:", exc=e, once=config.DEBUG
+        )
         await session.rollback()
         raise HTTPException(status_code=500, detail="Could not clear message")

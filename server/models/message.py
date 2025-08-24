@@ -7,7 +7,7 @@ from .base import Base
 
 
 class Message(Base):
-    """Represents a chat message sent by a user or assistant."""
+    """Represents a chat message sent by a user or finbot."""
 
     __tablename__ = "messages"
 
@@ -17,7 +17,7 @@ class Message(Base):
         ForeignKey("sessions.id", ondelete="CASCADE"),
         nullable=False,
     )
-    role = Column(String, nullable=False)  # 'user' or 'assistant'
+    role = Column(String, nullable=False)  # 'user' or 'finbot'
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.now)
 

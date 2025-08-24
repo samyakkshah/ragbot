@@ -4,6 +4,8 @@ from uuid import uuid4, UUID
 from db_manager import db_manager
 from models import Session
 from schemas.session import SessionOut
+
+from config import config
 from local_logs.logger import logger
 
 
@@ -28,7 +30,7 @@ async def create_session(
         logger.info(f"[session] Created new session {session.id}")
         return session
     except Exception as e:
-        logger.error(f"[session] Failed to create session: {e}")
+        logger.error("[session] Failed to create session:", exc=e, once=config.DEBUG)
         raise HTTPException(status_code=500, detail="Unable to create session")
 
 
@@ -41,5 +43,6 @@ async def get_session_by_id(
     """
     session = await db.get(Session, session_id)
     if not session:
+        logger.error("[session]: Could not get session")
         raise HTTPException(status_code=404, detail="Session not found")
     return session

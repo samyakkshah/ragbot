@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from uuid import uuid4
 from db_manager import db_manager
 from config import config
-from routers import system
+from routers import system, chat, sessions, rag
 
 # routes
 from routers.sessions import router as sessions_router
@@ -25,3 +25,6 @@ app.add_middleware(
 )
 
 app.include_router(system.router, prefix=config.API_V1_PREFIX)
+app.include_router(chat.router, prefix=config.API_V1_PREFIX)
+app.include_router(sessions.router, prefix=config.API_V1_PREFIX)
+app.include_router(rag.router, prefix=config.API_V1_PREFIX)
