@@ -4,13 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db_manager import db_manager
 from schemas.rag import RAGQuery
-from schemas.message import MessageCreate
 
-from services.open_ai_embedder import OpenAIEmbedder
-from services.pinecone_vector_store import PineconeVectorStore
-from services.open_ai_llm_generator import OpenAIChatGenerator
-from services.rag_pipeline import RAGPipeline
-from services.chat import add_message, get_messages
+from services.container import get_rag_pipeline
+from services.rag import RAGService
 
 
 from config import config
@@ -18,73 +14,48 @@ from local_logs.logger import logger
 
 router = APIRouter(prefix="/rag", tags=["RAG"])
 
-_embedder = OpenAIEmbedder()
-vector_store = PineconeVectorStore(embedder=_embedder, namespace="")
-_llm_generator = OpenAIChatGenerator()
-_rag_pipeline = RAGPipeline(vector_store, _llm_generator, top_k=5)
+
+def get_rag_service() -> RAGService:
+    return RAGService(get_rag_pipeline())
 
 
 @router.post("/query", status_code=status.HTTP_202_ACCEPTED)
 async def rag_stream(
     query: RAGQuery,
     request: Request,
-    session: AsyncSession = Depends(db_manager.get_session),
+    db: AsyncSession = Depends(db_manager.get_session),
+    rag_service: RAGService = Depends(get_rag_service),
 ):
+    """Stream a retrieval-augmented response for the given user query.
+
+    Persists the user message, threads recent chat history into the prompt,
+    streams the assistant response chunk-by-chunk, and finally persists the
+    full assistant message (best effort) even if the client disconnects.
+
+    Args:
+        query (RAGQuery): Pydantic payload containing session_id and message.
+        request (Request): FastAPI request (used to detect disconnects).
+        db (AsyncSession): Database session provided by dependency.
+        svc (RAGService): Orchestrator that encapsulates RAG business logic.
+
+    Returns:
+        StreamingResponse: UTF-8 text stream containing assistant chunks.
+
+    Raises:
+        HTTPException: 400 on invalid input, 5xx on unexpected errors.
     """
-    Stream a Retrieval‑Augmented Generation (RAG) response for the given query.
 
-    :param query: RAGQuery containing session_id and user message.
-    :param request: FastAPI Request (used to detect client disconnects).
-    :param db: Async database session.
-    :raises HTTPException: 500 on unrecoverable errors.
-    :return: StreamingResponse yielding model tokens as plain text.
-    """
-    # Best‑effort: persist user message first
-    try:
-        await add_message(
-            session, query.session_id, MessageCreate(role="user", content=query.message)
-        )
-    except Exception as e:
-        logger.error(
-            "[rag.stream] Failed to persist user message:", exc=e, once=config.DEBUG
-        )
+    async def gen():
+        async for chunk in rag_service.stream(
+            db,
+            session_id=query.session_id,
+            user_text=query.message,
+            is_disconnected=request.is_disconnected,
+        ):
+            yield chunk
 
-    async def token_generator():
-        buffer = ""
-        try:
-            history = list(await get_messages(session, query.session_id))
-            history = history[:-1]  # strip last message (user query)
-            async for chunk in _rag_pipeline.stream(query.message, history):
-                # Early client disconnect check (best‑effort)
-                try:
-                    if await request.is_disconnected():
-                        logger.warning(
-                            "[rag.stream] Client disconnected; stopping stream"
-                        )
-                        break
-                except Exception:
-                    pass
-
-                buffer += chunk
-                yield chunk
-        except Exception as stream_error:
-            logger.error(
-                f"[rag.stream] Streaming failed: {stream_error}", exc=stream_error
-            )
-            # Surface a minimal message to client and still try to persist
-            yield RAGPipeline.FALLBACK_MESSAGE
-        finally:
-            if buffer:
-                try:
-                    await add_message(
-                        session,
-                        query.session_id,
-                        MessageCreate(role="finbot", content=buffer),
-                    )
-                except Exception as db_error:
-                    logger.error(
-                        f"[rag.stream] Failed to save finbot response: {db_error}",
-                        exc=db_error,
-                    )
-
-    return StreamingResponse(token_generator(), media_type="text/plain; charset=utf-8")
+    return StreamingResponse(
+        gen(),
+        media_type="text/plain; charset=utf-8",
+        headers={"Cache-Control": "no-store"},
+    )

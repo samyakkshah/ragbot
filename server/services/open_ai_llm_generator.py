@@ -36,23 +36,30 @@ class OpenAIChatGenerator(LLMGenerator):
         """
         Build a prompt message list for OpenAI.
 
-        :param context_chunks: Retrieved knowledge text snippets.
-        :param query: Current user query.
-        :param history: Prior conversation messages (optional).
-        :return: List of chat messages for the API.
+        Args:
+            context_chunks: Retrieved knowledge text snippets.
+            query: Current user query.
+            history: Prior conversation messages (optional).
+
+        Returns:
+            List of chat messages for the API.
         """
         return build_messages(query=query, chunks=context_chunks, history=history or [])
 
-    async def stream_response(
+    async def stream(
         self, context_chunks: List[str], query: str, history: List[MessageModel]
     ) -> AsyncGenerator[str, None]:
-        """
-        Stream tokens from OpenAI given context + query.
+        """Stream tokens from the OpenAI chat completion API.
 
-        :param context_chunks: Retrieved knowledge text snippets.
-        :param query: User query string.
-        :param history: Prior conversation messages (optional).
-        :yield: Token fragments as strings.
+        Args:
+            messages: Ordered list of role/content pairs
+                following OpenAI Chat format.
+
+        Yields:
+            str: Content deltas emitted by the model.
+
+        Raises:
+            RuntimeError: Wraps lower-level SDK/network errors for the caller.
         """
         try:
             messages = self._messages_from(context_chunks, query, history)
@@ -75,4 +82,4 @@ class OpenAIChatGenerator(LLMGenerator):
                     )
         except Exception as e:
             logger.error("[OpenAIChatGenerator] Streaming failed", exc=e)
-            yield "I'm not sure based on the available information. Please contact our support team."
+            raise

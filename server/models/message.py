@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -19,6 +19,6 @@ class Message(Base):
     )
     role = Column(String, nullable=False)  # 'user' or 'finbot'
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
 
     session = relationship("Session", back_populates="messages")

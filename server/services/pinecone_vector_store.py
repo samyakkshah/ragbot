@@ -19,7 +19,7 @@ class PineconeVectorStore(VectorStore):
             if not config.PINECONE_API_KEY:
                 raise ValueError("PINECONE_API_KEY is not configured.")
             if not config.PINECONE_INDEX_HOST:
-                raise ValueError("PINECONE_INDEX_NAME is not configured.")
+                raise ValueError("PINECONE_INDEX_HOST is not configured.")
 
             self._pc = Pinecone(api_key=config.PINECONE_API_KEY)
             self._index = self._pc.Index(host=config.PINECONE_INDEX_HOST)
@@ -30,12 +30,21 @@ class PineconeVectorStore(VectorStore):
             raise
 
     async def get_relevant_chunks(self, query: str, top_k: int = 5) -> List[str]:
-        """
-        Retrieve the top_k most relevant text chunks from Pinecone.
+        """Retrieve the most relevant chunks for the given query.
 
-        :param query: User query string.
-        :param top_k: Number of matches to return.
-        :return: List of text chunks (may be empty on failure).
+        Embeds the query, performs a vector similarity search, and returns
+        normalized text chunks suitable for prompt construction.
+
+        Args:
+            query (str): Natural-language query to embed and search.
+            top_k (int): Number of results to return (must be > 0).
+
+        Returns:
+            list[str]: Ordered chunk texts from most to least relevant.
+
+        Raises:
+            ValueError: If `top_k` is non-positive.
+            RuntimeError: If Pinecone returns an error or malformed response.
         """
         try:
             if not (query or "").strip():

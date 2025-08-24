@@ -29,6 +29,12 @@ async def create_or_resume_session(
     if auth:
         user = await get_or_create_user(db, auth.user_id)
         return await create_or_resume_user_session(db, user.id._value)
+    sid = request.cookies.get("sid")
+    if sid:
+        try:
+            return await svc_get_session(db, UUID(sid))
+        except Exception:
+            pass
     return await create_or_resume_user_session(db)
 
 
@@ -37,7 +43,17 @@ async def get_session_by_id(
     session_id: UUID, db: AsyncSession = Depends(db_manager.get_session)
 ):
     """
-    Get basic metadata for a session.
+    Persist a new message in a session.
+
+    Args:
+        session_id (UUID): Chat session UUID.
+        db (Session): Get session.
+
+    Returns:
+        Session
+
+    Raises:
+        HTTPException: 500 on failure to get.
     """
     return await svc_get_session(db, session_id)
 
@@ -48,6 +64,5 @@ async def get_intro_message(
 ):
     """
     Get basic intro message
-    TODO: Replace with actual intro creation
     """
     return await create_intro_message(db, session_id)

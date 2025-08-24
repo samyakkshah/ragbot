@@ -80,10 +80,7 @@ class RAGPipeline:
             if not chunks:
                 logger.warning("[RAG] No context found")
 
-            # History injection can be added later; default to empty list for now.
-            async for token in self._llm_generator.stream_response(
-                chunks, query, history
-            ):
+            async for token in self._llm_generator.stream(chunks, query, history):
                 yield token
         except Exception as e:
             logger.error("[RAG] Pipeline streaming error:", exc=e)

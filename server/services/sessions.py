@@ -12,9 +12,7 @@ from local_logs.logger import logger
 
 INTRO_MESSAGE = (
     f"Hi! I'm your assistant for {config.COMPANY_NAME}. "
-    "I can help with Account & Registration, Payments & Transactions, "
-    "Security & Fraud Prevention, Regulations & Compliance, and Technical Support. "
-    "Ask me anything to get started."
+    "What can I help you with today?"
 )
 
 
@@ -22,9 +20,12 @@ async def create_session(db: AsyncSession) -> Session:
     """
     Create a new anonymous chat session and seed a persisted intro message.
 
-    :param db: Active async DB session.
-    :return: Newly created Session ORM object.
-    :raises HTTPException: 500 on failure.
+    Args:
+        db: Active async DB session.
+    Returns:
+        Newly created Session ORM object.
+    Raises:
+        HTTPException: 500 on failure.
     """
     try:
         session = Session(id=uuid4(), user_id=None)
@@ -60,9 +61,11 @@ async def create_or_resume_user_session(
     """
     Creates a new session or resumes existing session for a user.
 
-    :param db: Database session
-    :param user_id: Optional user ID. If None, creates anonymous session
-    :return Session: New or existing session
+    Args:
+        db: Database session
+        user_id: Optional user ID. If None, creates anonymous session
+    Returns:
+        Session: New or existing session
     """
     try:
         if user_id:
@@ -108,10 +111,15 @@ async def create_intro_message(session: AsyncSession, session_id: UUID) -> Intro
     """
     Fetch a session by id.
 
-    :param db: Active async DB session.
-    :param session_id: Target session UUID.
-    :return: Session ORM object.
-    :raises HTTPException: 404 if not found.
+    Args:
+        db: Active async DB session.
+        session_id: Target session UUID.
+
+    Returns:
+        Session ORM object.
+    Raises:
+        HTTPException: 404 if not found.
+    TODO: Replace with actual intro creation
     """
     try:
         return IntroMessage(content=INTRO_MESSAGE)

@@ -45,6 +45,7 @@ class Config(BaseModel):
     OPEN_AI_API_KEY: str
     EMBED_MODEL: str
     CHAT_MODEL: str
+    HISTORY_LIMIT: int
 
     # Embedding
     EMBED_DIM: int = 1024

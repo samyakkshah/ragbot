@@ -170,7 +170,11 @@ def build_messages(
     """
 
     context_block = _format_context(chunks=chunks)
-    history_block = _format_history(history=history) if len(history) > 1 else []
+    history_block = (
+        _format_history(history=history, max_pairs=config.HISTORY_LIMIT)
+        if len(history) > 1
+        else []
+    )
     user_content = f"""
 \"\"\"
 CONTEXT:

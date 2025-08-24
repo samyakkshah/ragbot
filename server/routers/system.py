@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Response
 from uuid import uuid4
 from db_manager import db_manager
 from config import config
-from routers.rag import vector_store
+from services.container import get_vector_store
 
 router = APIRouter()
 SESSION_COOKIE_NAME = "sid"
@@ -10,8 +10,9 @@ SESSION_COOKIE_NAME = "sid"
 
 @router.get("/health")
 async def health():
+
     pg_ok = await db_manager.test_postgres()
-    pc_ok = await vector_store.health_check()
+    pc_ok = await get_vector_store().health_check()
     return {"status": "ok", "postgres": pg_ok, "pinecone": pc_ok}
 
 
