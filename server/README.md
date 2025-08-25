@@ -19,6 +19,34 @@ The backend is built with **FastAPI** and implements:
 
 ---
 
+## ENV Variables required:
+
+```env
+APP_NAME
+ENV
+DEBUG
+REACT_APP_URL
+
+POSTGRES_DSN
+HTTPS
+
+SUPABASE_URL
+SUPABASE_ANON_KEY
+SUPABASE_SERVICE_KEY
+
+PINECONE_API_KEY
+PINECONE_ENV
+PINECONE_INDEX_HOST
+
+
+OPEN_AI_API_KEY
+EMBED_MODEL
+CHAT_MODEL
+
+HISTORY_LIMIT
+EMBED_DIM
+```
+
 ## Running Locally
 
 ```bash
