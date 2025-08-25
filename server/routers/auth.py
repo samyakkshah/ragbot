@@ -57,6 +57,7 @@ async def login(
             "user_id": str(user.id),
         }
     except Exception as e:
+        logger.error("Login failed", exc=e, once=config.DEBUG)
         raise HTTPException(status_code=401, detail=str(e))
 
 
@@ -67,4 +68,5 @@ async def logout(response: Response):
         response.delete_cookie(config.SESSION_COOKIE_NAME)
         return {"success": True}
     except Exception as e:
+        logger.error("Logout Failed", exc=e, once=config.DEBUG)
         raise HTTPException(status_code=400, detail=str(e))

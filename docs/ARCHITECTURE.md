@@ -35,7 +35,7 @@ This project follows a **full-stack design** with a retrieval-augmented generati
   - Backend on ECS or Lambda + API Gateway
   - Postgres (RDS or Supabase)
   - Pinecone or other Vector Database
-  - S3 for frontend hosting using Docker Cluster
+  - Frontend hosted on S3 and backend deployed on a Docker cluster (e.g., ECS).
 - `.env` based configuration for dev vs prod
 
 ---
