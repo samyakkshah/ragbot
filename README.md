@@ -7,14 +7,14 @@ The chatbot uses **Retrieval-Augmented Generation (RAG)** to provide accurate, c
 
 ## Features
 
-- **Backend (FastAPI, Python)**
+- **Server (FastAPI, Python)**
 
   - REST APIs for chat interactions
   - RAG pipeline with vector search (Pinecone) and LLM generation
   - Support for session-based chat history
   - Modular design to extend vector DB or LLM provider
 
-- **Frontend (React + TypeScript)**
+- **Client (React + TypeScript)**
 
   - Clean, minimal chat interface with bubble-based UI
   - Support for anonymous & known users
@@ -52,7 +52,7 @@ The chatbot uses **Retrieval-Augmented Generation (RAG)** to provide accurate, c
 2.  Backend setup:
 
     ```bash
-    cd backend
+    cd server
     cp .env.example .env   # add API keys and DB config
     pip install -r requirements.txt
     uvicorn app.main:app --reload
@@ -60,7 +60,7 @@ The chatbot uses **Retrieval-Augmented Generation (RAG)** to provide accurate, c
 
 3.  Frontend Setup:
     ```bash
-    cd frontend
+    cd client
     cp .env.example .env # add API base URL
     npm install
     npm start
