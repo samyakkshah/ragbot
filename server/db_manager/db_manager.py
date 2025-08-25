@@ -33,7 +33,7 @@ class DBManager:
                 await conn.execute(text("SELECT 1"))
             return True
         except Exception as e:
-            logger.error(f"Test Postgres Error: {e}")
+            logger.error("Test Postgres Error:", exc=e)
             return False
 
     async def init_db(self):

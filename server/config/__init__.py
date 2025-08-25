@@ -6,6 +6,7 @@ from pydantic import BaseModel, field_validator
 
 class Config(BaseModel):
     APP_NAME: str = "Eloquent AI"
+    COMPANY_NAME: str = "Eloquent"
     ENV: Literal["dev", "prod", "test"] = "dev"
     REACT_APP_URL: str
 
@@ -19,17 +20,7 @@ class Config(BaseModel):
 
     # Database
     POSTGRES_DSN: str
-    REDIS_URL: str
 
-    # Auth
-    JWT_SECRET: str
-    JWT_EXP_MINUTES: int = 7 * 24 * 60  # 7 days
-
-    # Streaming / chat
-    SSE_HEARTBEAT_SECONDS: int = 15
-    MAX_MESSAGE_TOKENS: int = 2000
-
-    # DB
     # Supabase
     SUPABASE_URL: str
     SUPABASE_ANON_KEY: str
@@ -38,8 +29,20 @@ class Config(BaseModel):
     # Pinecone
     PINECONE_API_KEY: str
     PINECONE_ENV: str
-    PINECONE_INDEX_NAME: str
+    PINECONE_INDEX_HOST: str
+
+    # Cookies
+    SESSION_COOKIE_NAME: str = "sid"
+    SESSION_COOKIE_EXP_MINUTES: int = 7 * 24 * 60  # 7 days
+
+    # LLM
     OPEN_AI_API_KEY: str
+    EMBED_MODEL: str
+    CHAT_MODEL: str
+    HISTORY_LIMIT: int
+
+    # Embedding
+    EMBED_DIM: int = 1024
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
