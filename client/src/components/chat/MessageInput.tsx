@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef } from "react";
 import { useChat } from "../../context/ChatContext";
 import { Button } from "../ui/Button";
 import { SendHorizonal } from "lucide-react";

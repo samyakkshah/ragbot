@@ -1,9 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { useChat } from "../../context/ChatContext";
 import MessageBubble from "./MessageBubble";
-import { TypeAnimation } from "react-type-animation";
 import { splitIntoBubbles } from "../../utils/split_bubbles";
-import Header from "../Header";
 
 const ChatWindow: React.FC = () => {
   const { messages, streaming } = useChat();

@@ -6,7 +6,6 @@ type Size = "sm" | "md";
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
-  size?: Size;
   loading?: boolean;
 }
 
