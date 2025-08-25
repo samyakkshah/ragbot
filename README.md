@@ -55,7 +55,7 @@ The chatbot uses **Retrieval-Augmented Generation (RAG)** to provide accurate, c
     cd server
     cp .env.example .env   # add API keys and DB config
     pip install -r requirements.txt
-    uvicorn app.main:app --reload
+    uvicorn app.main:app --reload --port 8000
     ```
 
 3.  Frontend Setup:
