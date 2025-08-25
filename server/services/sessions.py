@@ -143,7 +143,7 @@ async def create_or_resolve_session(
                 f"[service:session] Resumed session {existing.id} for user {user.id}"
             )
             return existing, False
-        session = await create_or_resume_user_session(db, user.id)  # type: ignore
+        session = await create_session(db, user.id)  # type: ignore
         return session, True
 
     if cookie_session_id:
