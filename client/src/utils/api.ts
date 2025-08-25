@@ -39,7 +39,6 @@ async function safeFetch<T>(
         ...authHeaders(),
         ...(options?.headers || {}),
       },
-      ...options,
     });
 
     if (!res.ok) {
