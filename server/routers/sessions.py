@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, status, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
@@ -7,12 +8,11 @@ from schemas.session import SessionOut
 
 from services.auth import Auth, get_auth_optional
 from services.sessions import (
-    create_or_resume_user_session,
     get_session as svc_get_session,
     create_intro_message,
     set_cookie,
+    create_or_resolve_session,
 )
-from services.user import get_or_create_user
 
 from config import config
 
@@ -24,22 +24,15 @@ async def create_or_resume_session(
     request: Request,
     response: Response,
     db: AsyncSession = Depends(db_manager.get_session),
-    auth: Auth | None = Depends(get_auth_optional),
+    auth: Optional[Auth] = Depends(get_auth_optional),
 ):
     """
-    Create a new session (anonymous) or return the existing one if user is authenticated.
+    Create a new session (anonymous) or return the existing one if user is authenticated, or already cookie is set.
     """
-    if auth:
-        user = await get_or_create_user(db, auth.user_id)
-        return await create_or_resume_user_session(db, user.id._value)
     cookie = request.cookies.get(config.SESSION_COOKIE_NAME)
-    if cookie:
-        try:
-            return await svc_get_session(db, UUID(cookie))
-        except Exception:
-            pass
-    session = await create_or_resume_user_session(db)
-    _ = set_cookie(str(session.id), response)
+    session, should_set_cookie = await create_or_resolve_session(db, auth, cookie)
+    if should_set_cookie:
+        set_cookie(str(session.id), response)
     return session
 
 

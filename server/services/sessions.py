@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Tuple
 from uuid import uuid4, UUID
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +6,8 @@ from fastapi import HTTPException, Response
 from models import Session
 from schemas.message import IntroMessage, MessageCreate
 from services.chat import add_message
-
+from services.user import get_or_create_user
+from services.auth import Auth
 from config import config
 from local_logs.logger import logger
 
@@ -17,7 +18,7 @@ INTRO_MESSAGE = (
 )
 
 
-async def create_session(db: AsyncSession) -> Session:
+async def create_session(db: AsyncSession, user_id: Optional[UUID] = None) -> Session:
     """
     Create a new anonymous chat session and seed a persisted intro message.
 
@@ -29,7 +30,7 @@ async def create_session(db: AsyncSession) -> Session:
         HTTPException: 500 on failure.
     """
     try:
-        session = Session(id=uuid4(), user_id=None)
+        session = Session(id=uuid4(), user_id=user_id)
         db.add(session)
         await db.commit()
         await db.refresh(session)
@@ -54,50 +55,6 @@ async def get_latest_session_for_user(
     )
     r = await db.execute(q)
     return r.scalar_one_or_none()
-
-
-async def create_or_resume_user_session(
-    db: AsyncSession, user_id: UUID | None = None
-) -> Session:
-    """
-    Creates a new session or resumes existing session for a user.
-
-    Args:
-        db: Database session
-        user_id: Optional user ID. If None, creates anonymous session
-    Returns:
-        Session: New or existing session
-    """
-    try:
-        if user_id:
-            existing = await get_latest_session_for_user(db, user_id)
-            if existing:
-                logger.info(
-                    f"[service:session] Resumed session {existing.id} for user {user_id}"
-                )
-                return existing
-
-            session = Session(id=uuid4(), user_id=user_id)
-            db.add(session)
-            await db.commit()
-            await db.refresh(session)
-            logger.info(
-                f"[service:session] Created new session {session.id} for user {user_id}"
-            )
-            return session
-
-        return await create_session(db)
-
-    except Exception as e:
-        logger.error(
-            "[service:session] Failed to create/resume session",
-            exc=e,
-            once=config.DEBUG,
-        )
-        await db.rollback()
-        raise HTTPException(
-            status_code=500, detail="Unable to create or resume session"
-        )
 
 
 async def get_session(db: AsyncSession, session_id: UUID) -> Session:
@@ -148,4 +105,53 @@ def set_cookie(cookie: str, response: Response):
     except Exception as e:
         logger.error("[cookie] Failed to Set cookie", exc=e, once=config.DEBUG)
         raise e
-    return {f"{config.SESSION_COOKIE_NAME}": cookie, "anonymous": True}
+    return {f"{config.SESSION_COOKIE_NAME}": cookie, "authenticated": False}
+
+
+async def create_or_resolve_session(
+    db: AsyncSession, auth: Optional[Auth], cookie_session_id: Optional[str]
+) -> Tuple[Session, bool]:
+    """
+    Single Source of truth to resolve a session based for the current request.
+
+    Workflow:
+    - If JWT present -> ensure User exists -> get latest session for user with user id or return session of cookie
+    - Else, if cookie is present, and cookie session id exists -> return that session
+    - Else, create new anonymous session
+
+    Returns:
+        (session, should_set_cookie)
+        - should_set_cookie = True when we created a new session or when no valid cookie existed
+    """
+
+    if auth is not None and getattr(auth, "user_id", None):
+        user = await get_or_create_user(db, auth.user_id)
+        if cookie_session_id:
+            try:
+                cookie_sess = await get_session(db, UUID(cookie_session_id))
+                if cookie_sess.user_id is None:
+                    cookie_sess.user_id = user.id
+                    await db.commit()
+                    await db.refresh(cookie_sess)
+                    return cookie_sess, False
+            except Exception:
+                logger.warning("Could not set user id")
+                pass
+        existing = await get_latest_session_for_user(db, user.id)  # type: ignore
+        if existing:
+            logger.info(
+                f"[service:session] Resumed session {existing.id} for user {user.id}"
+            )
+            return existing, False
+        session = await create_or_resume_user_session(db, user.id)  # type: ignore
+        return session, True
+
+    if cookie_session_id:
+        try:
+            session = await get_session(db, UUID(cookie_session_id))
+            return session, False
+        except Exception:
+            pass
+
+    session = await create_session(db, None)
+    return session, True

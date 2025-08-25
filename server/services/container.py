@@ -4,12 +4,15 @@ from services.open_ai_embedder import OpenAIEmbedder
 from services.pinecone_vector_store import PineconeVectorStore
 from services.open_ai_llm_generator import OpenAIChatGenerator
 from services.rag_pipeline import RAGPipeline
+from supabase import create_client, Client
+from config import config
 
 # Singleton-ish provider with lazy construction; replace with real DI anytime.
 _embedder: Optional[Embedder] = None
 _vector_store: Optional[VectorStore] = None
 _llm: Optional[LLMGenerator] = None
 _pipeline: Optional[RAGPipeline] = None
+_supabase: Optional[Client] = None
 
 
 def get_embedder() -> Embedder:
@@ -38,3 +41,10 @@ def get_rag_pipeline() -> RAGPipeline:
     if _pipeline is None:
         _pipeline = RAGPipeline(get_vector_store(), get_llm(), top_k=5)
     return _pipeline
+
+
+def get_supabase_client() -> Client:
+    global _supabase
+    if _supabase is None:
+        _supabase = create_client(config.SUPABASE_URL, config.SUPABASE_ANON_KEY)
+    return _supabase

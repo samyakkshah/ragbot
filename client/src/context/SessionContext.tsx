@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { useAuth } from "./AuthContext";
 import { SessionOut } from "../utils/types";
-import { createOrResumeSession } from "../utils/api";
+import { initSession } from "../utils/api";
 
 interface SessionContextType {
   session: SessionOut | null;
@@ -23,11 +24,14 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { auth } = useAuth();
+
   useEffect(() => {
     let cancelled = false;
+    if (session) return;
     async function init() {
       try {
-        const s = await createOrResumeSession();
+        const s = await initSession();
         if (!cancelled) setSession(s);
       } catch (err) {
         console.error("[Session Init Error]", err);
@@ -40,7 +44,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [auth?.token]);
 
   return (
     <SessionContext.Provider value={{ session, loading, error }}>

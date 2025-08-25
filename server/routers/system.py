@@ -1,9 +1,14 @@
-from fastapi import APIRouter, Request, Response
-from services.sessions import set_cookie
-from db_manager import db_manager
-from config import config
+from typing import Optional
+from fastapi import APIRouter, Request, Response, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from services.sessions import set_cookie, create_or_resolve_session
+from services.auth import Auth, get_auth_optional
 from services.container import get_vector_store
-from uuid import uuid4
+
+from db_manager import db_manager
+
+from config import config
 
 router = APIRouter()
 
@@ -16,9 +21,16 @@ async def health():
     return {"status": "ok", "postgres": pg_ok, "pinecone": pc_ok}
 
 
-@router.get("/me")
-def me(request: Request, response: Response):
-    cookie = request.cookies.get(config.SESSION_COOKIE_NAME)
-    if not cookie:
-        cookie = str(uuid4())
-    return set_cookie(cookie, response)
+# Redundant route - Could be refactored later
+# @router.get("/me")
+# async def me(
+#     request: Request,
+#     response: Response,
+#     db: AsyncSession = Depends(db_manager.get_session),
+#     auth: Optional[Auth] = Depends(get_auth_optional),
+# ):
+#     cookie = request.cookies.get(config.SESSION_COOKIE_NAME)
+#     session, should_set_cookie = await create_or_resolve_session(db, auth, cookie)
+#     if should_set_cookie:
+#         set_cookie(str(session.id), response)
+#     return {"session_id": str(session.id), "anonymous": session.user_id is None}

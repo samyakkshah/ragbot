@@ -2,6 +2,30 @@ import { SessionOut, IntroMessage, MessageResponse, RAGQuery } from "./types";
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 
+let AUTH_TOKEN: string | null = null;
+
+export const setAuthToken = (token: string | null, persist = true) => {
+  AUTH_TOKEN = token;
+  if (persist) {
+    if (token) localStorage.setItem("jwt_user_token", token);
+    else localStorage.removeItem("jwt_user_token");
+  }
+};
+
+const getAuthToken = () => {
+  return AUTH_TOKEN;
+};
+
+(() => {
+  const t = localStorage.getItem("jwt_user_token");
+  if (t) AUTH_TOKEN = t;
+})();
+
+const authHeaders = (): HeadersInit => {
+  const tkn = getAuthToken();
+  return tkn ? { Authorization: `Bearer ${tkn}` } : {};
+};
+
 async function safeFetch<T>(
   url: string,
   options: RequestInit = {}
@@ -10,6 +34,12 @@ async function safeFetch<T>(
     const res = await fetch(url, {
       ...options,
       credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(),
+        ...(options?.headers || {}),
+      },
+      ...options,
     });
 
     if (!res.ok) {
@@ -24,7 +54,7 @@ async function safeFetch<T>(
   }
 }
 
-export async function createOrResumeSession(): Promise<SessionOut> {
+export async function initSession(): Promise<SessionOut> {
   return safeFetch<SessionOut>(`${BASE_URL}/session/`, { method: "POST" });
 }
 
@@ -70,5 +100,50 @@ export async function sendMessage(
   } catch (err) {
     console.error("[API STREAM ERROR]", err);
     throw err instanceof Error ? err : new Error("Streaming API error");
+  }
+}
+
+export async function signup(email: string, password: string) {
+  try {
+    const res = await fetch(`${BASE_URL}/auth/signup`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) throw new Error("Signup failed");
+    return await res.json();
+  } catch (err) {
+    console.error("Signup error:", err);
+    return null;
+  }
+}
+
+export async function login(email: string, password: string) {
+  try {
+    const res = await fetch(`${BASE_URL}/auth/login`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) throw new Error("Login failed");
+    return await res.json();
+  } catch (err) {
+    console.error("Login error:", err);
+    return null;
+  }
+}
+
+export async function logout() {
+  try {
+    await fetch(`${BASE_URL}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+    return true;
+  } catch (err) {
+    console.error("Logout error:", err);
+    return false;
   }
 }
