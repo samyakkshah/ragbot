@@ -6,16 +6,16 @@ This project follows a **full-stack design** with a retrieval-augmented generati
 
 ## Components
 
-### Frontend
+### Client
 
 - `React` + `TS` app with chat UI
 - Shows assistant & user bubbles
 - Splits assistant responses using `[[NEW_BUBBLE]]`
 - Persists chat history per session
 
-### Backend
+### Server
 
-- FastAPI APIs (`/chat`, `/health`, `/history`)
+- FastAPI APIs
 - RAG pipeline:
   - Retrieve relevant docs via Pinecone
   - Construct system prompt
