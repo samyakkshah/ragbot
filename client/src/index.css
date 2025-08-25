@@ -3,22 +3,20 @@
 @tailwind utilities;
 
 :root {
-  /* backgrounds / surfaces */
   --bg-base: #ffffff;
   --bg-muted: #f8fafc;
-  --bg-subtle: #f1f5f9;
+  --bg-subtle: #eeeeee;
+  --bg-tinted: #eeeeee95;
 
   --surface-base: #ffffff;
   --surface-raised: #ffffff;
   --surface-muted: #f8fafc;
 
-  /* text */
   --text-primary: #0f172a;
   --text-secondary: #334155;
   --text-muted: #475569;
   --text-inverted: #ffffff;
 
-  /* borders + rings */
   --border-subtle: #e2e8f0;
   --border-base: #cbd5e1;
   --border-strong: #94a3b8;
@@ -26,7 +24,6 @@
   --ring-focus: #2563eb;
   --ring-hover: #3b82f6;
 
-  /* brand scales (primary/secondary/accent) */
   --primary-50: #eff6ff;
   --primary-100: #dbeafe;
   --primary-200: #bfdbfe;
@@ -58,7 +55,6 @@
   --accent-800: #155e75;
   --accent-900: #164e63;
 
-  /* radii + shadows (used by utilities/classes) */
   --radius-xs: 4px;
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -72,9 +68,10 @@
 }
 
 .dark {
-  --bg-base: #0b1220;
+  --bg-base: #131313;
   --bg-muted: #0f172a;
-  --bg-subtle: #111827;
+  --bg-subtle: #252525;
+  --bg-tinted: #25252595;
 
   --surface-base: #0f172a;
   --surface-raised: #111827;

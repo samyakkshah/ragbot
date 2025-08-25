@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Request
+from fastapi import APIRouter, Depends, status, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from db_manager import db_manager
@@ -10,9 +10,11 @@ from services.sessions import (
     create_or_resume_user_session,
     get_session as svc_get_session,
     create_intro_message,
+    set_cookie,
 )
 from services.user import get_or_create_user
 
+from config import config
 
 router = APIRouter(prefix="/session", tags=["Session"])
 
@@ -20,6 +22,7 @@ router = APIRouter(prefix="/session", tags=["Session"])
 @router.post("/", response_model=SessionOut, status_code=status.HTTP_201_CREATED)
 async def create_or_resume_session(
     request: Request,
+    response: Response,
     db: AsyncSession = Depends(db_manager.get_session),
     auth: Auth | None = Depends(get_auth_optional),
 ):
@@ -29,13 +32,15 @@ async def create_or_resume_session(
     if auth:
         user = await get_or_create_user(db, auth.user_id)
         return await create_or_resume_user_session(db, user.id._value)
-    sid = request.cookies.get("sid")
-    if sid:
+    cookie = request.cookies.get(config.SESSION_COOKIE_NAME)
+    if cookie:
         try:
-            return await svc_get_session(db, UUID(sid))
+            return await svc_get_session(db, UUID(cookie))
         except Exception:
             pass
-    return await create_or_resume_user_session(db)
+    session = await create_or_resume_user_session(db)
+    _ = set_cookie(str(session.id), response)
+    return session
 
 
 @router.get("/{session_id}", response_model=SessionOut)

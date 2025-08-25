@@ -1,51 +1,74 @@
-export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+import { SessionOut, IntroMessage, MessageResponse, RAGQuery } from "./types";
 
-interface ApiOptions<TBody = unknown> {
-  method?: HttpMethod;
-  headers?: Record<string, string>;
-  body?: TBody;
-  signal?: AbortSignal;
-}
+const BASE_URL = process.env.REACT_APP_API_URL;
 
-const BASE_URL = process.env.REACT_APP_API_BASE_URL ?? "/api";
+async function safeFetch<T>(
+  url: string,
+  options: RequestInit = {}
+): Promise<T> {
+  try {
+    const res = await fetch(url, {
+      ...options,
+      credentials: "include",
+    });
 
-async function request<TResponse, TBody = unknown>(
-  path: string,
-  opts: ApiOptions<TBody> = {}
-): Promise<TResponse> {
-  const { method = "GET", headers = {}, body, signal } = opts;
-  const isJson =
-    body && typeof body === "object" && !(body instanceof FormData);
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`HTTP ${res.status} - ${errorText}`);
+    }
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers: {
-      ...(isJson ? { "Content-Type": "application/json" } : {}),
-      ...headers,
-    },
-    body: isJson ? JSON.stringify(body) : (body as BodyInit | null | undefined),
-    credentials: "include",
-    signal,
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(text || `Request failed: ${res.status}`);
+    return (await res.json()) as T;
+  } catch (err) {
+    console.error(`[API ERROR] ${url}`, err);
+    throw err instanceof Error ? err : new Error("Unknown API error");
   }
-  const ct = res.headers.get("content-type") || "";
-  if (ct.includes("application/json")) return (await res.json()) as TResponse;
-  return (await res.text()) as unknown as TResponse;
 }
 
-export const API = {
-  get: <T>(path: string, signal?: AbortSignal) =>
-    request<T>(path, { method: "GET", signal }),
-  post: <T, B = unknown>(path: string, body?: B, signal?: AbortSignal) =>
-    request<T, B>(path, { method: "POST", body, signal }),
-  put: <T, B = unknown>(path: string, body?: B, signal?: AbortSignal) =>
-    request<T, B>(path, { method: "PUT", body, signal }),
-  patch: <T, B = unknown>(path: string, body?: B, signal?: AbortSignal) =>
-    request<T, B>(path, { method: "PATCH", body, signal }),
-  del: <T>(path: string, signal?: AbortSignal) =>
-    request<T>(path, { method: "DELETE", signal }),
-};
+export async function createOrResumeSession(): Promise<SessionOut> {
+  return safeFetch<SessionOut>(`${BASE_URL}/session/`, { method: "POST" });
+}
+
+export async function getChatHistory(
+  sessionId: string
+): Promise<MessageResponse[]> {
+  return safeFetch<MessageResponse[]>(`${BASE_URL}/chat/${sessionId}`);
+}
+
+export async function getIntro(sessionId: string): Promise<IntroMessage> {
+  return safeFetch<IntroMessage>(`${BASE_URL}/session/${sessionId}/intro`);
+}
+
+export async function deleteChat(sessionId: string): Promise<void> {
+  await safeFetch<void>(`${BASE_URL}/chat/${sessionId}`, { method: "DELETE" });
+}
+
+export async function sendMessage(
+  query: RAGQuery,
+  onChunk: (text: string) => void
+): Promise<void> {
+  try {
+    const res = await fetch(`${BASE_URL}/rag/query`, {
+      method: "POST",
+      body: JSON.stringify(query),
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+
+    if (!res.ok || !res.body) {
+      const errorText = await res.text();
+      throw new Error(`Streaming failed: ${res.status} - ${errorText}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      onChunk(decoder.decode(value, { stream: true }));
+    }
+  } catch (err) {
+    console.error("[API STREAM ERROR]", err);
+    throw err instanceof Error ? err : new Error("Streaming API error");
+  }
+}

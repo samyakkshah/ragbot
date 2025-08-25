@@ -2,9 +2,10 @@ from typing import Optional
 from uuid import uuid4, UUID
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException
+from fastapi import HTTPException, Response
 from models import Session
-from schemas.message import IntroMessage
+from schemas.message import IntroMessage, MessageCreate
+from services.chat import add_message
 
 from config import config
 from local_logs.logger import logger
@@ -102,7 +103,7 @@ async def create_or_resume_user_session(
 async def get_session(db: AsyncSession, session_id: UUID) -> Session:
     session = await db.get(Session, session_id)
     if not session:
-        logger.warning("[service:session] Session not found")
+        logger.warning(f"[service:session] Session {session_id} not found in DB")
         raise HTTPException(status_code=404, detail="Session not found")
     return session
 
@@ -122,6 +123,8 @@ async def create_intro_message(session: AsyncSession, session_id: UUID) -> Intro
     TODO: Replace with actual intro creation
     """
     try:
+        message = MessageCreate(role="finbot", content=INTRO_MESSAGE)
+        await add_message(session, session_id, message)
         return IntroMessage(content=INTRO_MESSAGE)
     except Exception as e:
         logger.error(
@@ -130,3 +133,19 @@ async def create_intro_message(session: AsyncSession, session_id: UUID) -> Intro
         )
         await session.rollback()
         raise HTTPException(status_code=500, detail="Could not generate Intro message")
+
+
+def set_cookie(cookie: str, response: Response):
+    try:
+        response.set_cookie(
+            key=config.SESSION_COOKIE_NAME,
+            value=cookie,
+            httponly=True,
+            secure=config.HTTPS,  # set to True if HTTPS
+            samesite="lax",
+            max_age=60 * 60 * 24 * 30,  # 30 days
+        )
+    except Exception as e:
+        logger.error("[cookie] Failed to Set cookie", exc=e, once=config.DEBUG)
+        raise e
+    return {f"{config.SESSION_COOKIE_NAME}": cookie, "anonymous": True}

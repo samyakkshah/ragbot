@@ -5,7 +5,7 @@ type Mode = "light" | "dark" | "system";
 const storageKey = "theme-mode";
 
 export const useThemeMode = () => {
-  const [mode, setMode] = useState<Mode>(
+  const [theme, setTheme] = useState<Mode>(
     () => (localStorage.getItem(storageKey) as Mode) || "system"
   );
 
@@ -14,10 +14,10 @@ export const useThemeMode = () => {
     const prefersDark = window.matchMedia(
       "(prefers-color-scheme: dark)"
     ).matches;
-    const isDark = mode == "dark" || (mode === "system" && prefersDark);
+    const isDark = theme == "dark" || (theme === "system" && prefersDark);
     root.classList.toggle("dark", isDark);
-    localStorage.setItem(storageKey, mode);
-  }, [mode]);
+    localStorage.setItem(storageKey, theme);
+  }, [theme]);
 
-  return { mode, setMode };
+  return { theme, setTheme };
 };

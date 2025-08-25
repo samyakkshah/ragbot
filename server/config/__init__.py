@@ -20,17 +20,7 @@ class Config(BaseModel):
 
     # Database
     POSTGRES_DSN: str
-    REDIS_URL: str
 
-    # Auth
-    JWT_SECRET: str
-    JWT_EXP_MINUTES: int = 7 * 24 * 60  # 7 days
-
-    # Streaming / chat
-    SSE_HEARTBEAT_SECONDS: int = 15
-    MAX_MESSAGE_TOKENS: int = 2000
-
-    # DB
     # Supabase
     SUPABASE_URL: str
     SUPABASE_ANON_KEY: str
@@ -40,6 +30,10 @@ class Config(BaseModel):
     PINECONE_API_KEY: str
     PINECONE_ENV: str
     PINECONE_INDEX_HOST: str
+
+    # Cookies
+    SESSION_COOKIE_NAME: str = "sid"
+    SESSION_COOKIE_EXP_MINUTES: int = 7 * 24 * 60  # 7 days
 
     # LLM
     OPEN_AI_API_KEY: str

@@ -43,11 +43,11 @@ module.exports = {
         xl: "0 20px 55px rgba(0,0,0,0.16)",
       },
       colors: {
-        // semantic tokens via CSS variables — stays in sync with theme.json
         bg: {
           base: "var(--bg-base)",
           muted: "var(--bg-muted)",
           subtle: "var(--bg-subtle)",
+          tinted: "var(--bg-tinted)",
         },
         surface: {
           base: "var(--surface-base)",
