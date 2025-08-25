@@ -45,8 +45,8 @@ The chatbot uses **Retrieval-Augmented Generation (RAG)** to provide accurate, c
 1.  Clone the repository:
 
     ```bash
-    git clone https://github.com/your-username/eloquent-ai-chatbot.git
-    cd eloquent-ai-chatbot
+    git clone https://github.com/samyakkshah/ragbot.git
+    cd ragbot
     ```
 
 2.  Backend setup:
