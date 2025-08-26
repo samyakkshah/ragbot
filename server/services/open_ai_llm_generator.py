@@ -7,7 +7,7 @@ from interfaces.llm_generator import LLMGenerator
 from prompts.fintech import build_messages
 
 if TYPE_CHECKING:
-    from models import Message as MessageModel  # only for type checkers
+    from models import Message as MessageModel
 else:
     MessageModel = Any
 
